@@ -2,9 +2,13 @@ import time
 import numpy as np 
 import pandas as pd 
 import argparse
-from combine import Plus_PC
+# from combine import Plus_PC
 import os 
-from PC import PC
+from trash.PC import PC
+from SADA import SADA 
+import networkx as nx 
+from combine import count_accuracy
+from combine import edge_to_graph
 
 
 
@@ -26,8 +30,8 @@ def read_opts():
                                                             "Varsort", "R2sort",
                                                             "ICALiNGAM", "DirectLiNGAM",
                                                             "GraNDAG"], default="PC")
-    
-    parser.add_argument("--groundtruth_dir" , type= str , default= './data/andes')
+    parser.add_argument("--threshold" , type= int , default=10)
+    parser.add_argument("--groundtruth_dir" , type= str , default= './data/andes-gauss-1000')
     parser.add_argument("--maxCset", type=int, default= 3) 
     
     options = vars(parser.parse_args())
@@ -36,8 +40,8 @@ def read_opts():
 
 def read_groundtruth(data_dir):
 
-    data = pd.read_csv(f"{os.path.join(data_dir , 'graph.csv')}")
-    stru_GT = pd.read_csv(f"{os.path.join(data_dir) , 'data.csv'}").to_numpy()
+    data = pd.read_csv(f"{os.path.join(data_dir , 'data.csv')}")
+    stru_GT = pd.read_csv(os.path.join(data_dir, 'groundtruth.csv')).to_numpy()
     return data, stru_GT
 
 
@@ -51,8 +55,8 @@ if __name__ == "__main__":
     options = read_opts()
     results = {}
     results[f'{options["algorithm"]}'] = []
-    for i in range(10):
-        data_dir = options['groundtruth_folder']
+    for i in range(options['repeat']):
+        data_dir = options['groundtruth_dir']
         data_dir = os.path.join(data_dir, str(i))
         data , stru_GT = read_groundtruth(data_dir=data_dir)
 
@@ -60,20 +64,24 @@ if __name__ == "__main__":
             data = categorize_data(data)
 
 
-        # Run PC to get the skeleton of data, then pass the skeleton into each partition algorithm
-        # pc_start = time.time()
-        # pc = PC(data)
-        # skeleton = pc.skeleton 
-        # pc_end = time.time()
-        # pc_elapsed = pc_end - pc_start 
 
 
         #Run partition and combine 
-        start_time = time.time()
-        result = Plus_PC(options['algorithm'], data , stru_GT, options['maxCset'])
-        results[options['algorithm']].append(result)
-        elapsed = time.time() - start_time
+        
+        if options['algorithm'] == 'SADA':
+            start_time = time.time()
+            edge_list = SADA(dataset=data , V_set= [i for i in range(stru_GT.shape[0])], stru_GT= stru_GT ,options = options)
+            elapsed = time.time() - start_time
+
+            final_graph = edge_to_graph(stru_GT , edge_list)
+            precision, recall, f1, S, shd = count_accuracy(stru_GT , final_graph)
+            result = [precision, recall, f1, S, shd]
+            results[options['algorithm']].append(result)
+        elif options== 'CAPA':
+            ...
+        
         print(f"{options['algorithm']} completed in {elapsed:.4f} seconds")
+        print(result)
 
 
 

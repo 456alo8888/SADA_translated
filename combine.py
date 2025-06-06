@@ -2,8 +2,18 @@ import numpy as np
 import pandas as pd 
 import time 
 from CAPA import CAPA
-from SADA import SADA
-from PC_part import PC
+
+
+def edge_to_graph(stru_GT , edge_list):
+    
+    final_graph = np.zeros((stru_GT.shape[0] , stru_GT.shape[0]))
+    for e in edge_list:
+        if final_graph[e[1] ,e[0]] == 1:
+            final_graph[e[1] , e[0]] = -1
+            final_graph[e[0] ,e[1]] = 0
+        else:
+            final_graph[e[0] , e[1]] = 1
+    return final_graph
 
 def count_accuracy(B_true, B_est):
     """
@@ -92,49 +102,73 @@ def merge_struct(struA , struB , global_adj):
     ...
     return global_adj
 
-def Plus_PC(partition_alg, data , stru_GT , maxCset , datatype):
+# def Plus_PC(partition_alg, data , stru_GT , maxCset , datatype):
 
-    if partition_alg == "SADA":
-        cut_set,nodeA,nodeB, _ = SADA(data , stru_GT)
-    elif partition_alg == "CAPA":
-        cut_set, nodeA, nodeB, _ = CAPA(data, stru_GT)
+#     if partition_alg == "SADA":
+#         cut_set,nodeA,nodeB, _ = SADA(data , stru_GT)
+#     elif partition_alg == "CAPA":
+#         cut_set, nodeA, nodeB, _ = CAPA(data, stru_GT)
 
-    PA = np.unique(np.concatenate((nodeA, cut_set)))
-    PB = np.unique(np.concatenate((nodeB, cut_set)))
+#     PA = np.unique(np.concatenate((nodeA, cut_set)))
+#     PB = np.unique(np.concatenate((nodeB, cut_set)))
 
-    data_A = vertical_data_seperation(data , PA)
-    data_B = vertical_data_seperation(data , PB)
+#     data_A = vertical_data_seperation(data , PA)
+#     data_B = vertical_data_seperation(data , PB)
 
-    # -----------Run PC on dataA ---------------------------
-    if datatype == 'continuous':
-        pc_A = PC(variant='stable', alpha=0.05, ci_test='fisherz')
-    elif datatype == 'discrete':
-        pc_A = PC(variant='stable', alpha=0.05, ci_test='chi2')
+#     # -----------Run PC on dataA ---------------------------
+#     if datatype == 'continuous':
+#         pc_A = PC(variant='stable', alpha=0.05, ci_test='fisherz')
+#     elif datatype == 'discrete':
+#         pc_A = PC(variant='stable', alpha=0.05, ci_test='chi2') #need preprocess categorical data -> discrete numeric values?
 
-    pc_A.learn(data_A)
-    stru_A = pc_A.causal_matrix
+#     pc_A.learn(data_A)
+#     stru_A = pc_A.causal_matrix
 
-    # -----------Run PC on dataB ---------------------------
-    if datatype == 'continuous':
-        pc_B = PC(variant='stable', alpha=0.05, ci_test='fisherz')
-    elif datatype == 'discrete':
-        pc_B = PC(variant='stable', alpha=0.05, ci_test='chi2')
+#     # -----------Run PC on dataB ---------------------------
+#     if datatype == 'continuous':
+#         pc_B = PC(variant='stable', alpha=0.05, ci_test='fisherz')
+#     elif datatype == 'discrete':
+#         pc_B = PC(variant='stable', alpha=0.05, ci_test='chi2')
 
-    pc_B.learn(data_B)
-    stru_B = pc_B.causal_matrix
-
-
-    # ---------merge 2 local structure ----------------------
-    global_adj = merge_struct()
+#     pc_B.learn(data_B)
+#     stru_B = pc_B.causal_matrix
 
 
-
-    precision, recall, f1, S, shd = count_accuracy(stru_GT , global_adj)
-    return np.array([precision , recall , f1 , S , shd])
+#     # ---------merge 2 local structure ----------------------
+#     global_adj = np.zeros((stru_GT.shape[0] , stru_GT.shape[0]))
+#     global_adj = merge_struct(struA=stru_A , struB=stru_B , global_adj=global_adj)
 
 
 
-    
+#     precision, recall, f1, S, shd = count_accuracy(stru_GT , global_adj)
+#     return np.array([precision , recall , f1 , S , shd])
+
+
+
+def reformat_causal_graph(cg_graph):
+    d = cg_graph.G.graph.shape[0]
+    new_cg = np.zeros((d, d), dtype=int)
+
+    for i in range(d):
+        for j in range(d):
+            if i == j:
+                continue
+            
+            if cg_graph.G.graph[j, i] == 1 and cg_graph.G.graph[i, j] == -1:
+                new_cg[i, j] = 1
+                new_cg[j, i] = 0
+
+            elif (cg_graph.G.graph[i, j] == -1 and cg_graph.G.graph[j, i] == -1) or \
+                 (cg_graph.G.graph[i, j] == 1 and cg_graph.G.graph[j, i] == 1):
+                new_cg[i, j] = -1
+                new_cg[j, i] = 0
+            else:
+                new_cg[i, j] = 0
+                new_cg[j, i] = 0
+                
+    new_cg_graph = cg_graph
+    new_cg_graph.G.graph = new_cg
+    return new_cg, new_cg_graph     #new_cg is np.array and new_cg_graph is Graph obj 
 
 
 

@@ -1,0 +1,1 @@
+python main.py --algorithm 'SADA' --groundtruth_dir "/mnt/disk1/hieupcvp/SADA_translated/data/andes-gauss-1000" --threshold 500
