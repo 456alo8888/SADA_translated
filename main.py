@@ -9,6 +9,7 @@ from SADA import SADA
 import networkx as nx 
 from combine import count_accuracy
 from combine import edge_to_graph
+from preprocess import min_max_normalize
 
 
 
@@ -46,8 +47,7 @@ def read_groundtruth(data_dir):
 
 
 def categorize_data(data):
-    ...
-    return data 
+    return data
 
 
 if __name__ == "__main__":
@@ -60,11 +60,9 @@ if __name__ == "__main__":
         data_dir = os.path.join(data_dir, str(i))
         data , stru_GT = read_groundtruth(data_dir=data_dir)
 
+        data = min_max_normalize(data)
         if options['datatype'] == 'discrete':
             data = categorize_data(data)
-
-
-
 
         #Run partition and combine 
         

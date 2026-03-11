@@ -244,8 +244,8 @@ def extract_edge(cg_graph, V_set):
 def SADA(dataset, V_set, stru_GT, options):
     
     if options['datatype'] == 'continuous':
-        ci_test = 'fisherz'
-        CoInT = CIT(data = dataset.to_numpy() , method = 'fisherz')
+        ci_test = 'kci'
+        CoInT = CIT(data = dataset.to_numpy() , method = 'kci')
     elif options['datatype'] == 'discrete':
         ci_test = 'chi2'
         CoInT = CIT(data = dataset.to_numpy() , method = 'chi2')
